@@ -49,3 +49,28 @@ test_preds <- predict(bike_workflow, new_data = bikeTest) %>%
   mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
   mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
 vroom_write(x=test_preds, file="./TestPreds.csv", delim=",")
+
+
+
+
+########POISSON REGRESSION
+
+install.packages("poissonreg")
+library(poissonreg)
+
+pois_mod <- poisson_reg() %>% #Type of model
+  set_engine("glm") # GLM = generalized linear model
+
+
+bike_pois_workflow <- workflow() %>%
+add_recipe(bike_recipe) %>%
+add_model(pois_mod) %>%
+fit(data = bikeTrain) # Fit the workflow
+
+pois_test_preds <- predict(bike_pois_workflow, new_data = bikeTest) %>%
+  bind_cols(., bikeTest) %>% #Bind predictions with test data
+  select(datetime, .pred) %>% #Just keep datetime and predictions
+  rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
+  mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
+  mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
+vroom_write(x=test_preds, file="./PoisTestPreds.csv", delim=",")
